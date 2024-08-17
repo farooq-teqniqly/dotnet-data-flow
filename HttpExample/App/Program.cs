@@ -7,18 +7,20 @@ using Microsoft.Extensions.Logging;
 
 internal class Program
 {
-    static void Main(string[] args)
+    protected Program()
+    {
+        
+    }
+    static async Task Main()
     {
         var builder = Host.CreateApplicationBuilder();
 
-        var loggerFactory = LoggerFactory.Create(b =>
-        {
-            b.AddConsole();
-        });
+        var loggerFactory = LoggerFactory.Create(
+            b => b.AddConsole());
 
         var logger = loggerFactory.CreateLogger<Program>();
 
-        var baseAddress = new Uri("https://jsonplaceholder.typicode.com/");
+        var baseAddress = new Uri(builder.Configuration["BaseAddress"]!);
 
         var httpConfigurations = new List<HttpRequestConfiguration>
         {
@@ -47,5 +49,17 @@ internal class Program
 
         builder.Services.AddSingleton(httpConfigurations.AsEnumerable());
         builder.Services.AddSingleton<DataFlow>();
+
+        var host = builder.Build();
+
+        using (host)
+        {
+            var dataFlow = host.Services.GetRequiredService<DataFlow>();
+
+            await dataFlow.RunAsync(
+                response => logger.LogInformation(
+                    "Received response with length {@Length}",
+                    response.Length.ToString()));
+        }
     }
 }

@@ -2,7 +2,6 @@ namespace Lib;
 
 using System.Threading.Tasks.Dataflow;
 using Microsoft.Extensions.Logging;
-using static System.Net.WebRequestMethods;
 
 public class DataFlow
 {
@@ -26,6 +25,10 @@ public class DataFlow
 
         var downloadBlock = new TransformBlock<HttpRequestConfiguration, string>(async (config) =>
         {
+            _logger.LogInformation(
+                "Downloading using config {@Config}",
+                config);
+
             using (var httpClient = _httpClientFactory.CreateClient(config.ClientName))
             {
                 var request = new HttpRequestMessage(config.Method, config.Uri);
@@ -37,7 +40,12 @@ public class DataFlow
             }
         }, dataFlowBlockOptions);
 
-        var notifyBlock = new ActionBlock<string>((handleResponse), dataFlowBlockOptions);
+        var notifyBlock = new ActionBlock<string>(response =>
+        {
+            _logger.LogInformation("Handling response.");
+
+            handleResponse(response);
+        }, dataFlowBlockOptions);
 
         var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
 
@@ -45,7 +53,10 @@ public class DataFlow
 
         foreach (var configuration in _configurations)
         {
-            _logger.LogInformation("Downloading ");
+            _logger.LogInformation(
+                "Calling download block with {@Config}",
+                configuration);
+
             await downloadBlock.SendAsync(configuration);
         }
 

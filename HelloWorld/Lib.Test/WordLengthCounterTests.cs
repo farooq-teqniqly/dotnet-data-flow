@@ -17,11 +17,10 @@ public class WordLengthCounterTests
 
         await WordLengthCounter.RunAsync(
             dictionaryFilePath,
-            (kvp) =>
-            {
-                wordLengthsDictionary.TryAdd(kvp.Key, kvp.Value);
-            });
+            (kvp) => wordLengthsDictionary.TryAdd(
+                kvp.Key,
+                kvp.Value));
 
-        wordLengthsDictionary.Count.Should().Be(31);
+        wordLengthsDictionary.Should().HaveCount(31);
     }
 }

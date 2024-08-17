@@ -7,6 +7,11 @@ using System.Threading.Tasks.Dataflow;
 
 public class WordLengthCounter
 {
+    protected WordLengthCounter()
+    {
+
+    }
+
     public static async Task RunAsync(
         string dictionaryFilePath,
         Action<KeyValuePair<int, int>> resultHandler)
@@ -30,7 +35,7 @@ public class WordLengthCounter
                 aggregationResults.AddOrUpdate(
                     key,
                     1,
-                    (l, _) => aggregationResults[key] + 1);
+                    (k, _) => aggregationResults[k] + 1);
             }
 
             return aggregationResults;

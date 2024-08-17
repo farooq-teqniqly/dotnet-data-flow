@@ -5,18 +5,18 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-public class WordCounter
+public class WordLengthCounter
 {
     public static async Task RunAsync(
         string dictionaryFilePath,
-        Action<KeyValuePair<string, int>> resultHandler)
+        Action<KeyValuePair<int, int>> resultHandler)
     {
-        var aggregationResults = new ConcurrentDictionary<string, int>();
+        var aggregationResults = new ConcurrentDictionary<int, int>();
 
         var importBlock = new TransformBlock<string, IEnumerable<string>>(
             async p => await File.ReadAllLinesAsync(p));
 
-        var aggregationBlock = new TransformManyBlock<IEnumerable<string>, KeyValuePair<string, int>>(lines =>
+        var aggregationBlock = new TransformManyBlock<IEnumerable<string>, KeyValuePair<int, int>>(lines =>
         {
             foreach (var line in lines)
             {
@@ -25,10 +25,12 @@ public class WordCounter
                     continue;
                 }
 
+                var key = line.Trim().Length;
+
                 aggregationResults.AddOrUpdate(
-                    line,
+                    key,
                     1,
-                    (l, _) => aggregationResults[l] + 1);
+                    (l, _) => aggregationResults[key] + 1);
             }
 
             return aggregationResults;
@@ -36,7 +38,7 @@ public class WordCounter
         },
             new ExecutionDataflowBlockOptions{MaxDegreeOfParallelism = 2});
 
-        var notifyBlock = new ActionBlock<KeyValuePair<string, int>>(
+        var notifyBlock = new ActionBlock<KeyValuePair<int, int>>(
             resultHandler,
             new ExecutionDataflowBlockOptions {MaxDegreeOfParallelism = 2});
 

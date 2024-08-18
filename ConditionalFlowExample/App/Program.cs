@@ -4,6 +4,9 @@ using Bogus;
 using Lib;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Templates.Themes;
 
 internal class Program
 {
@@ -14,13 +17,18 @@ internal class Program
 
     static async Task Main()
     {
-        var builder = Host.CreateDefaultBuilder();
+        var builder = Host.CreateApplicationBuilder();
 
-        builder.ConfigureServices(s =>
-        {
-            s.AddSingleton(_ => new Faker());
-            s.AddSingleton<DataFlow>();
-        });
+        builder.Services.AddSingleton(_ => new Faker());
+        builder.Services.AddSingleton<DataFlow>();
+
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.Console()
+            .ReadFrom.Configuration(builder.Configuration)
+            .CreateLogger();
+
+        builder.Logging.ClearProviders();
+        builder.Logging.AddSerilog(Log.Logger);
 
         var host = builder.Build();
 

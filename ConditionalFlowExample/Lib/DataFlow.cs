@@ -1,5 +1,6 @@
 namespace Lib;
 
+using System.Diagnostics;
 using System.Threading.Tasks.Dataflow;
 using Bogus;
 using Microsoft.Extensions.Logging;
@@ -24,33 +25,33 @@ public class DataFlow
 
     public async Task RunAsync(IEnumerable<string> urls)
     {
-            var downloadBlock = new TransformBlock<string, string>(async (url) =>
+            var downloadBlock = new TransformBlock<string, (string, string)>(async (url) =>
             {
-                using (_logger.BeginScope("DownloadBlock"))
+                using (var activity = new Activity("Download block"))
                 {
-                    _logger.LogInformation("Inside download block.");
+                    activity.SetTag("Url", url);
+                    activity.Start();
 
                     await Task.Delay(TimeSpan.FromSeconds(_random.Next(1, 5)));
-
                     var content = _faker.Lorem.Sentence(5);
-
-                    _logger.LogInformation("Downloaded {@Content} from {@Url}", content, url);
-
-                    return content;
+                    return (url, content);
                 }
-
             }, _executionOptions);
 
-        var storageBlock = new ActionBlock<string>(async (content) =>
+        var storageBlock = new ActionBlock<(string, string)>(async (tup) =>
         {
-            using(_logger.BeginScope("StorageBlock"))
+            var url = tup.Item1;
+            var content = tup.Item2;
+
+            using (var activity = new Activity("Storage block"))
             {
-                _logger.LogInformation("Storing {@Content}...", content);
+                activity.SetTag("Url", url);
+                activity.SetTag("ContentLength", content.Length);
 
+                activity.Start();
                 await Task.Delay(TimeSpan.FromSeconds(_random.Next(1, 5)));
-
-                _logger.LogInformation("Content stored: {@Content}", content);
             }
+
         }, _executionOptions);
 
         downloadBlock.LinkTo(storageBlock, _linkOptions);

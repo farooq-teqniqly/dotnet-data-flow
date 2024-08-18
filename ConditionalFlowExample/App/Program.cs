@@ -29,7 +29,6 @@ internal class Program
 
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console(Formatters.CreateConsoleTextFormatter(TemplateTheme.Code))
-            .WriteTo.ApplicationInsights(TelemetryConverter.Traces)
             .ReadFrom.Configuration(builder.Configuration)
             .CreateLogger();
 

@@ -24,27 +24,33 @@ public class DataFlow
 
     public async Task RunAsync(IEnumerable<string> urls)
     {
-        var downloadBlock = new TransformBlock<string, string>(async (url) =>
-        {
-            _logger.LogInformation("Inside download block.");
+            var downloadBlock = new TransformBlock<string, string>(async (url) =>
+            {
+                using (_logger.BeginScope("DownloadBlock"))
+                {
+                    _logger.LogInformation("Inside download block.");
 
-            await Task.Delay(TimeSpan.FromSeconds(_random.Next(1, 5)));
+                    await Task.Delay(TimeSpan.FromSeconds(_random.Next(1, 5)));
 
-            var content = _faker.Lorem.Sentence(5);
+                    var content = _faker.Lorem.Sentence(5);
 
-            _logger.LogInformation("Downloaded {@Content} from {@Url}", content, url);
+                    _logger.LogInformation("Downloaded {@Content} from {@Url}", content, url);
 
-            return content;
+                    return content;
+                }
 
-        }, _executionOptions);
+            }, _executionOptions);
 
         var storageBlock = new ActionBlock<string>(async (content) =>
         {
-            _logger.LogInformation("Storing {@Content}...", content);
+            using(_logger.BeginScope("StorageBlock"))
+            {
+                _logger.LogInformation("Storing {@Content}...", content);
 
-            await Task.Delay(TimeSpan.FromSeconds(_random.Next(1, 5)));
+                await Task.Delay(TimeSpan.FromSeconds(_random.Next(1, 5)));
 
-            _logger.LogInformation("Content stored: {@Content}", content);
+                _logger.LogInformation("Content stored: {@Content}", content);
+            }
         }, _executionOptions);
 
         downloadBlock.LinkTo(storageBlock, _linkOptions);
